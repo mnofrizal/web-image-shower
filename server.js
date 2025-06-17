@@ -197,13 +197,34 @@ io.on("connection", (socket) => {
 
   // Handle TV display page connections
   socket.on("joinTvDisplay", (tvId) => {
-    socket.join(`tv-${tvId}`);
-    console.log(`Client ${socket.id} bergabung dengan TV ${tvId}`);
+    const roomName = `tv-${tvId}`;
+    socket.join(roomName);
+    console.log(`Client ${socket.id} bergabung dengan room ${roomName}`);
+
+    // Send confirmation back to client
+    socket.emit("joinedTvRoom", { tvId, roomName });
   });
 
   socket.on("leaveTvDisplay", (tvId) => {
     socket.leave(`tv-${tvId}`);
     console.log(`Client ${socket.id} meninggalkan TV ${tvId}`);
+  });
+
+  // Handle zoom commands from dashboard
+  socket.on("zoomCommand", (data) => {
+    const { tvId, command } = data;
+    console.log(`Zoom command "${command}" dikirim ke TV ${tvId}`);
+
+    // Send zoom command to specific TV room
+    io.to(`tv-${tvId}`).emit("zoomCommand", {
+      command: command,
+    });
+
+    // Send confirmation back to dashboard
+    socket.emit("zoomCommandSent", {
+      tvId: tvId,
+      command: command,
+    });
   });
 });
 

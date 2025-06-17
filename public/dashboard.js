@@ -63,6 +63,20 @@ class TVDashboard {
     this.socket.on("disconnect", () => {
       console.log("Terputus dari server");
     });
+
+    // Listen for zoom command responses
+    this.socket.on("zoomCommandSent", (data) => {
+      const { tvId, command, clientCount } = data;
+      if (clientCount > 0) {
+        this.showSuccess(
+          `Perintah "${command}" dikirim ke TV ${tvId} (${clientCount} client terhubung)`
+        );
+      } else {
+        this.showError(
+          `TV ${tvId} tidak terhubung. Buka halaman TV terlebih dahulu.`
+        );
+      }
+    });
   }
 
   bindEvents() {
@@ -175,6 +189,19 @@ class TVDashboard {
                 <div class="tv-image">
                     ${imageHtml}
                 </div>
+                ${
+                  tv.image
+                    ? `
+                <div class="image-controls">
+                    <button class="btn btn-icon" onclick="dashboard.sendZoomCommand(${tv.id}, 'zoomIn')" title="Perbesar">🔍+</button>
+                    <button class="btn btn-icon" onclick="dashboard.sendZoomCommand(${tv.id}, 'zoomOut')" title="Perkecil">🔍-</button>
+                    <button class="btn btn-icon" onclick="dashboard.sendZoomCommand(${tv.id}, 'resetZoom')" title="Reset Zoom">↻</button>
+                    <button class="btn btn-icon" onclick="dashboard.sendZoomCommand(${tv.id}, 'fitToScreen')" title="Fit to Screen">📐</button>
+                    <button class="btn btn-icon" onclick="dashboard.sendZoomCommand(${tv.id}, 'stretchToScreen')" title="Stretch to Screen">⛶</button>
+                </div>
+                `
+                    : ""
+                }
                 <div class="tv-actions">
                     <button class="btn btn-primary" onclick="dashboard.showUploadModal(${
                       tv.id
@@ -453,6 +480,31 @@ class TVDashboard {
   formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleString("id-ID");
+  }
+
+  // Send zoom command to specific TV
+  sendZoomCommand(tvId, command) {
+    if (this.socket) {
+      this.socket.emit("zoomCommand", {
+        tvId: tvId,
+        command: command,
+      });
+
+      // Show immediate feedback
+      const commandNames = {
+        zoomIn: "Perbesar",
+        zoomOut: "Perkecil",
+        resetZoom: "Reset Zoom",
+        fitToScreen: "Fit to Screen",
+        stretchToScreen: "Stretch to Screen",
+      };
+
+      this.showSuccess(
+        `Mengirim perintah "${commandNames[command]}" ke TV ${tvId}`
+      );
+    } else {
+      this.showError("Tidak terhubung ke server");
+    }
   }
 }
 

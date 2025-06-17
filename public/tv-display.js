@@ -5,6 +5,7 @@ class TVDisplay {
     this.refreshInterval = null;
     this.cursorTimeout = null;
     this.socket = null;
+    this.zoomLevel = 1;
     this.init();
   }
 
@@ -44,11 +45,36 @@ class TVDisplay {
     this.socket.on("connect", () => {
       console.log("Terhubung ke server");
       this.updateStatus("connected");
+
+      // Re-join TV room when reconnected
+      if (this.tvId) {
+        console.log(`Re-joining room untuk TV ${this.tvId}`);
+        this.socket.emit("joinTvDisplay", this.tvId);
+      }
     });
 
     this.socket.on("disconnect", () => {
       console.log("Terputus dari server");
       this.updateStatus("error");
+    });
+
+    // Listen for room join confirmation
+    this.socket.on("joinedTvRoom", (data) => {
+      console.log(`Berhasil bergabung dengan room: ${data.roomName}`);
+    });
+
+    // Listen for zoom commands from dashboard
+    this.socket.on("zoomCommand", (data) => {
+      const { command, tvId } = data;
+      console.log(`Menerima perintah zoom: ${command} untuk TV ${tvId}`);
+
+      // Execute the zoom command
+      if (typeof this[command] === "function") {
+        this[command]();
+        console.log(`Menjalankan perintah: ${command}`);
+      } else {
+        console.error(`Perintah tidak ditemukan: ${command}`);
+      }
     });
   }
 
@@ -83,6 +109,20 @@ class TVDisplay {
           if (document.fullscreenElement) {
             document.exitFullscreen();
           }
+          break;
+        case "+":
+        case "=":
+          e.preventDefault();
+          this.zoomIn();
+          break;
+        case "-":
+        case "_":
+          e.preventDefault();
+          this.zoomOut();
+          break;
+        case "0":
+          e.preventDefault();
+          this.resetZoom();
           break;
       }
     });
@@ -178,6 +218,11 @@ class TVDisplay {
 
     tvImage.src = imageUrl;
     tvImage.alt = `${this.tvData.name} Display`;
+
+    // Apply current zoom level to new image
+    setTimeout(() => {
+      this.applyZoom();
+    }, 100);
   }
 
   showNoImage() {
@@ -323,6 +368,141 @@ class TVDisplay {
 
   goToDashboard() {
     window.open("/", "_blank");
+  }
+
+  // Zoom functionality
+  zoomIn() {
+    this.zoomLevel = Math.min(this.zoomLevel + 0.25, 3); // Max zoom 3x
+    this.applyZoom();
+  }
+
+  zoomOut() {
+    this.zoomLevel = Math.max(this.zoomLevel - 0.25, 0.5); // Min zoom 0.5x
+    this.applyZoom();
+  }
+
+  resetZoom() {
+    this.zoomLevel = 1;
+    this.resetImageFit();
+    this.applyZoom();
+  }
+
+  fitToScreen() {
+    const imageDisplay = document.getElementById("imageDisplay");
+    const tvImage = document.getElementById("tvImage");
+
+    if (tvImage && this.tvData && this.tvData.image) {
+      // Reset any previous transformations
+      this.resetImageFit();
+
+      // Calculate fit-to-screen zoom
+      const displayRect = imageDisplay.getBoundingClientRect();
+      const img = new Image();
+      img.onload = () => {
+        const scaleX = displayRect.width / img.naturalWidth;
+        const scaleY = displayRect.height / img.naturalHeight;
+        this.zoomLevel = Math.min(scaleX, scaleY);
+
+        tvImage.style.objectFit = "contain";
+        this.applyZoom();
+        this.showFitNotification("Fit to Screen");
+      };
+      img.src = tvImage.src;
+    }
+  }
+
+  stretchToScreen() {
+    const tvImage = document.getElementById("tvImage");
+
+    if (tvImage && this.tvData && this.tvData.image) {
+      // Reset zoom and apply stretch
+      this.zoomLevel = 1;
+      this.resetImageFit();
+
+      tvImage.style.objectFit = "fill";
+      tvImage.style.width = "100%";
+      tvImage.style.height = "100%";
+      tvImage.style.maxWidth = "none";
+      tvImage.style.maxHeight = "none";
+
+      this.showFitNotification("Stretch to Screen");
+    }
+  }
+
+  resetImageFit() {
+    const tvImage = document.getElementById("tvImage");
+    if (tvImage) {
+      tvImage.style.objectFit = "contain";
+      tvImage.style.width = "";
+      tvImage.style.height = "";
+      tvImage.style.maxWidth = "100%";
+      tvImage.style.maxHeight = "100%";
+      tvImage.style.transform = "";
+    }
+  }
+
+  showFitNotification(mode) {
+    // Remove existing notifications
+    const existingNotification = document.querySelector(".zoom-notification");
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+
+    // Create new notification
+    const notification = document.createElement("div");
+    notification.className = "zoom-notification";
+    notification.textContent = mode;
+    document.body.appendChild(notification);
+
+    // Auto remove after 2 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, 2000);
+  }
+
+  applyZoom() {
+    const imageDisplay = document.getElementById("imageDisplay");
+    const tvImage = document.getElementById("tvImage");
+
+    if (tvImage && this.tvData && this.tvData.image) {
+      tvImage.style.transform = `scale(${this.zoomLevel})`;
+      tvImage.style.transformOrigin = "center center";
+
+      // Update cursor style to indicate zoom level
+      if (this.zoomLevel > 1) {
+        imageDisplay.style.cursor = "zoom-out";
+      } else if (this.zoomLevel < 1) {
+        imageDisplay.style.cursor = "zoom-in";
+      } else {
+        imageDisplay.style.cursor = "default";
+      }
+
+      // Show zoom level notification
+      this.showZoomNotification();
+    }
+  }
+
+  showZoomNotification() {
+    // Remove existing zoom notification
+    const existingNotification = document.querySelector(".zoom-notification");
+    if (existingNotification) {
+      existingNotification.remove();
+    }
+
+    // Create new zoom notification
+    const notification = document.createElement("div");
+    notification.className = "zoom-notification";
+    notification.textContent = `Zoom: ${Math.round(this.zoomLevel * 100)}%`;
+    document.body.appendChild(notification);
+
+    // Auto remove after 2 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.remove();
+      }
+    }, 2000);
   }
 }
 

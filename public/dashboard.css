@@ -152,6 +152,40 @@ header p {
     padding: 8px 16px;
 }
 
+/* Image controls styling */
+.image-controls {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin: 10px 0;
+    padding: 8px;
+    background: rgba(0,0,0,0.05);
+    border-radius: 6px;
+}
+
+.btn-icon {
+    padding: 6px 8px !important;
+    min-width: auto !important;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    color: #495057;
+    transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-icon:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
 .tv-url {
     background: #e9ecef;
     padding: 8px 12px;

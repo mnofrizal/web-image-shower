@@ -106,6 +106,12 @@ body {
     object-fit: contain;
     border-radius: 8px;
     box-shadow: 0 0 30px rgba(255, 255, 255, 0.1);
+    transition: transform 0.3s ease;
+    cursor: grab;
+}
+
+.image-display img:active {
+    cursor: grabbing;
 }
 
 .error {
@@ -160,8 +166,8 @@ body {
     bottom: 0;
     left: 0;
     right: 0;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(2px);
     padding: 15px 20px;
     display: flex;
     justify-content: space-between;
@@ -305,4 +311,76 @@ body {
     100% {
         box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
     }
+}
+
+/* Zoom notification */
+.zoom-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 25px;
+    font-size: 1.2rem;
+    font-weight: 600;
+    z-index: 9999;
+    backdrop-filter: blur(10px);
+    animation: zoomNotificationFade 2s ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes zoomNotificationFade {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+    20% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+}
+
+/* Enhanced image display for zoom */
+.image-display {
+    overflow: hidden;
+    position: relative;
+}
+
+.image-display.zoomed {
+    overflow: auto;
+    cursor: move;
+}
+
+.image-display.zoomed img {
+    cursor: move;
+}
+
+/* Scrollbar styling for zoomed images */
+.image-display::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.image-display::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.image-display::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+}
+
+.image-display::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
 }
