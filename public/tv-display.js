@@ -209,10 +209,6 @@ class TVDisplay {
 
     tvImage.onload = () => {
       imageDisplay.style.display = "flex";
-      // Auto fit to screen on first load
-      setTimeout(() => {
-        this.autoFitToScreen();
-      }, 100);
     };
 
     tvImage.onerror = () => {
@@ -432,10 +428,10 @@ class TVDisplay {
     const tvImage = document.getElementById("tvImage");
     if (tvImage) {
       tvImage.style.objectFit = "contain";
-      tvImage.style.width = "";
-      tvImage.style.height = "";
-      tvImage.style.maxWidth = "100%";
-      tvImage.style.maxHeight = "100%";
+      tvImage.style.width = "100%";
+      tvImage.style.height = "100%";
+      tvImage.style.maxWidth = "none";
+      tvImage.style.maxHeight = "none";
       tvImage.style.transform = "";
     }
   }
