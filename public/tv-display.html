@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tampilan TV</title>
+    <link rel="stylesheet" href="tv-display.css">
+</head>
+<body>
+    <div class="tv-container">
+        <div class="tv-content" id="tvContent">
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Memuat Tampilan TV...</p>
+            </div>
+            
+            <div class="no-image" id="noImage" style="display: none;">
+                <div class="icon">📺</div>
+                <h2>Tidak Ada Gambar</h2>
+                <p>Silakan unggah gambar dari dashboard</p>
+                <div class="tv-info">
+                    <span id="tvName">Tampilan TV</span>
+                    <span id="tvId"></span>
+                </div>
+            </div>
+            
+            <div class="image-display" id="imageDisplay" style="display: none;">
+                <img id="tvImage" src="" alt="TV Display Image">
+            </div>
+            
+            <div class="error" id="error" style="display: none;">
+                <div class="icon">⚠️</div>
+                <h2>TV Tidak Ditemukan</h2>
+                <p>Tampilan TV ini tidak ada atau telah dihapus.</p>
+                <a href="/" class="btn">Ke Dashboard</a>
+            </div>
+        </div>
+        
+        <div class="tv-controls" id="tvControls">
+            <div class="control-item">
+                <span class="label">TV:</span>
+                <span class="value" id="controlTvName">-</span>
+            </div>
+            <div class="control-item">
+                <span class="label">Terakhir Diperbarui:</span>
+                <span class="value" id="controlLastUpdate">-</span>
+            </div>
+            <div class="control-item">
+                <button class="btn btn-small" onclick="location.reload()">🔄 Muat Ulang</button>
+                <button class="btn btn-small" onclick="window.open('/', '_blank')">⚙️ Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="tv-display.js"></script>
+</body>
+</html>

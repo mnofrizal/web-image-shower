@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DASHBOARD TV UBP SURALAYA</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📺 DASHBOARD TV UBP SURALAYA</h1>
+            <p>Kelola tampilan TV dan unggah gambar</p>
+        </header>
+
+        <div class="controls">
+            <button id="addTvBtn" class="btn btn-primary">
+                <span>➕</span> Tambah TV Baru
+            </button>
+        </div>
+
+        <div class="tv-grid" id="tvGrid">
+            <!-- TV cards will be dynamically added here -->
+        </div>
+
+        <!-- Add TV Modal -->
+        <div id="addTvModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Tambah TV Baru</h2>
+                    <span class="close" id="closeModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="addTvForm">
+                        <div class="form-group">
+                            <label for="tvName">Nama TV:</label>
+                            <input type="text" id="tvName" name="tvName" required placeholder="contoh: TV Ruang Tamu">
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelBtn">Batal</button>
+                            <button type="submit" class="btn btn-primary">Tambah TV</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Image Modal -->
+        <div id="uploadModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Unggah Gambar</h2>
+                    <span class="close" id="closeUploadModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="form-group">
+                            <label for="imageFile">Pilih Gambar:</label>
+                            <input type="file" id="imageFile" name="image" accept="image/*" required>
+                            <small>Format yang didukung: JPG, PNG, GIF, WebP (Maks: 10MB)</small>
+                        </div>
+                        <div class="image-preview" id="imagePreview"></div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelUploadBtn">Batal</button>
+                            <button type="submit" class="btn btn-primary">Unggah Gambar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Memproses...</p>
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>
