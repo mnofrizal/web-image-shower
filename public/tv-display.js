@@ -209,6 +209,10 @@ class TVDisplay {
 
     tvImage.onload = () => {
       imageDisplay.style.display = "flex";
+      // Auto fit to screen on first load
+      setTimeout(() => {
+        this.autoFitToScreen();
+      }, 100);
     };
 
     tvImage.onerror = () => {
@@ -218,11 +222,6 @@ class TVDisplay {
 
     tvImage.src = imageUrl;
     tvImage.alt = `${this.tvData.name} Display`;
-
-    // Apply current zoom level to new image
-    setTimeout(() => {
-      this.applyZoom();
-    }, 100);
   }
 
   showNoImage() {
@@ -460,6 +459,31 @@ class TVDisplay {
         notification.remove();
       }
     }, 2000);
+  }
+
+  autoFitToScreen() {
+    const imageDisplay = document.getElementById("imageDisplay");
+    const tvImage = document.getElementById("tvImage");
+
+    if (tvImage && this.tvData && this.tvData.image) {
+      // Reset any previous transformations
+      this.resetImageFit();
+
+      // Calculate fit-to-screen zoom
+      const displayRect = imageDisplay.getBoundingClientRect();
+      const img = new Image();
+      img.onload = () => {
+        const scaleX = displayRect.width / img.naturalWidth;
+        const scaleY = displayRect.height / img.naturalHeight;
+        this.zoomLevel = Math.min(scaleX, scaleY);
+
+        tvImage.style.objectFit = "contain";
+        this.applyZoom();
+        // Don't show notification for auto-fit
+        console.log("Auto fit to screen applied");
+      };
+      img.src = tvImage.src;
+    }
   }
 
   applyZoom() {
