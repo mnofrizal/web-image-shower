@@ -2,6 +2,7 @@ class TVDashboard {
   constructor() {
     this.tvs = [];
     this.currentUploadTvId = null;
+    this.currentYoutubeTvId = null;
     this.socket = null;
     this.init();
   }
@@ -32,13 +33,36 @@ class TVDashboard {
       const tvIndex = this.tvs.findIndex((tv) => tv.id === data.tvId);
       if (tvIndex !== -1) {
         this.tvs[tvIndex] = data.tvData;
-        this.renderTVs();
+        // This is the crucial change: instead of re-rendering everything,
+        // we find the specific card and update its content.
+        const card = document.querySelector(
+          `.tv-card[data-tv-id="${data.tvId}"]`
+        );
+        if (card) {
+          const imageContainer = card.querySelector(".tv-image");
+          if (imageContainer) {
+            imageContainer.innerHTML = data.tvData.image
+              ? `<img src="${data.tvData.image}" alt="Gambar TV ${data.tvData.id}">`
+              : '<div class="no-image">📷 Belum ada gambar yang diunggah</div>';
+          }
+        }
         // Only show notification if this client didn't upload the image
         if (this.currentUploadTvId !== data.tvId) {
           this.showSuccess(
             `Gambar TV "${data.tvData.name}" diperbarui oleh pengguna lain!`
           );
         }
+      }
+    });
+
+    this.socket.on("youtubeLinkUpdated", (data) => {
+      const tvIndex = this.tvs.findIndex((tv) => tv.id === data.tvId);
+      if (tvIndex !== -1) {
+        this.tvs[tvIndex] = data.tvData;
+        this.renderTVs();
+        this.showSuccess(
+          `Tautan YouTube untuk TV "${data.tvData.name}" diperbarui.`
+        );
       }
     });
 
@@ -116,16 +140,37 @@ class TVDashboard {
       this.previewImage(e);
     });
 
+    // YouTube Modal
+    document
+      .getElementById("closeYoutubeModal")
+      .addEventListener("click", () => {
+        this.hideYoutubeModal();
+      });
+
+    document
+      .getElementById("cancelYoutubeBtn")
+      .addEventListener("click", () => {
+        this.hideYoutubeModal();
+      });
+
+    document.getElementById("youtubeForm").addEventListener("submit", (e) => {
+      this.handleUpdateYoutubeLink(e);
+    });
+
     // Close modals when clicking outside
     window.addEventListener("click", (e) => {
       const addModal = document.getElementById("addTvModal");
       const uploadModal = document.getElementById("uploadModal");
+      const youtubeModal = document.getElementById("youtubeModal");
 
       if (e.target === addModal) {
         this.hideAddTvModal();
       }
       if (e.target === uploadModal) {
         this.hideUploadModal();
+      }
+      if (e.target === youtubeModal) {
+        this.hideYoutubeModal();
       }
     });
   }
@@ -166,11 +211,11 @@ class TVDashboard {
     const tvUrl = `${window.location.origin}/tv-${tv.id}`;
     // Tambahkan timestamp untuk mencegah cache gambar
     const imageHtml = tv.image
-      ? `<img src="${tv.image}?t=${Date.now()}" alt="Gambar TV ${tv.id}">`
+      ? `<img src="${tv.image}" alt="Gambar TV ${tv.id}">`
       : '<div class="no-image">📷 Belum ada gambar yang diunggah</div>';
 
     return `
-            <div class="tv-card">
+            <div class="tv-card" data-tv-id="${tv.id}">
                 <h3>${this.escapeHtml(tv.name)}</h3>
                 <div class="tv-info">
                     <strong>ID TV:</strong> ${tv.id}<br>
@@ -185,6 +230,13 @@ class TVDashboard {
                 </div>
                 <div class="tv-url">
                     <strong>URL Tampilan:</strong> ${tvUrl}
+                </div>
+                 <div class="tv-youtube">
+                    <strong>Tautan YouTube:</strong> ${
+                      tv.youtubeLink
+                        ? `<a href="${tv.youtubeLink}" target="_blank">${tv.youtubeLink}</a>`
+                        : "Tidak ada"
+                    }
                 </div>
                 <div class="tv-image">
                     ${imageHtml}
@@ -207,6 +259,11 @@ class TVDashboard {
                       tv.id
                     })">
                         📤 Unggah Gambar
+                    </button>
+                    <button class="btn btn-primary" onclick="dashboard.showYoutubeModal(${
+                      tv.id
+                    })">
+                        ▶️ YouTube
                     </button>
                     <button class="btn btn-secondary" onclick="window.open('/tv-${
                       tv.id
@@ -244,6 +301,22 @@ class TVDashboard {
     document.getElementById("uploadForm").reset();
     document.getElementById("imagePreview").innerHTML = "";
     this.currentUploadTvId = null;
+  }
+
+  showYoutubeModal(tvId) {
+    this.currentYoutubeTvId = tvId;
+    const tv = this.tvs.find((t) => t.id === tvId);
+    if (tv) {
+      document.getElementById("youtubeLink").value = tv.youtubeLink || "";
+    }
+    document.getElementById("youtubeModal").style.display = "block";
+    document.getElementById("youtubeLink").focus();
+  }
+
+  hideYoutubeModal() {
+    document.getElementById("youtubeModal").style.display = "none";
+    document.getElementById("youtubeForm").reset();
+    this.currentYoutubeTvId = null;
   }
 
   async handleAddTv(e) {
@@ -337,6 +410,56 @@ class TVDashboard {
       this.showSuccess("Gambar berhasil diunggah!");
     } catch (error) {
       console.error("Error uploading image:", error);
+      this.showError(error.message);
+    } finally {
+      this.hideLoading();
+    }
+  }
+
+  async handleUpdateYoutubeLink(e) {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const youtubeLink = formData.get("youtubeLink").trim();
+
+    if (!this.currentYoutubeTvId) {
+      this.showError("Tidak ada TV yang dipilih");
+      return;
+    }
+
+    try {
+      this.showLoading();
+      const response = await fetch(
+        `/api/tvs/${this.currentYoutubeTvId}/youtube`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ youtubeLink }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Gagal memperbarui tautan YouTube");
+      }
+
+      const updatedTv = await response.json();
+
+      // Update the TV in our local array
+      const tvIndex = this.tvs.findIndex(
+        (tv) => tv.id === this.currentYoutubeTvId
+      );
+      if (tvIndex !== -1) {
+        this.tvs[tvIndex] = updatedTv;
+      }
+
+      this.renderTVs();
+      this.hideYoutubeModal();
+      this.showSuccess("Tautan YouTube berhasil diperbarui!");
+    } catch (error) {
+      console.error("Error updating YouTube link:", error);
       this.showError(error.message);
     } finally {
       this.hideLoading();

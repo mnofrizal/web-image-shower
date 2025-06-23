@@ -94,6 +94,7 @@ app.post("/api/tvs", (req, res) => {
     id,
     name,
     image: null,
+    youtubeLink: null,
     createdAt: new Date().toISOString(),
   };
 
@@ -125,6 +126,28 @@ app.post("/api/tvs/:id/upload", upload.single("image"), (req, res) => {
 
   // Emit real-time update to all connected clients
   io.emit("imageUpdated", {
+    tvId: tv.id,
+    tvData: tv,
+  });
+
+  res.json(tv);
+});
+
+// Update YouTube link for a TV
+app.post("/api/tvs/:id/youtube", (req, res) => {
+  const tvId = parseInt(req.params.id);
+  const { youtubeLink } = req.body;
+  const tv = tvs.find((t) => t.id === tvId);
+
+  if (!tv) {
+    return res.status(404).json({ error: "TV tidak ditemukan" });
+  }
+
+  tv.youtubeLink = youtubeLink;
+  tv.updatedAt = new Date().toISOString();
+
+  // Emit real-time update to all connected clients
+  io.emit("youtubeLinkUpdated", {
     tvId: tv.id,
     tvData: tv,
   });

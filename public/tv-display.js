@@ -14,7 +14,6 @@ class TVDisplay {
     this.initSocket();
     this.setupEventListeners();
     this.loadTVData();
-    this.startAutoRefresh();
     this.setupCursorHiding();
   }
 
@@ -32,6 +31,14 @@ class TVDisplay {
         this.tvData = data.tvData;
         this.displayTV();
         console.log("Gambar diperbarui secara real-time");
+      }
+    });
+
+    this.socket.on("youtubeLinkUpdated", (data) => {
+      if (data.tvId === this.tvId) {
+        this.tvData = data.tvData;
+        this.updateYoutubePlayer();
+        console.log("Tautan YouTube diperbarui secara real-time");
       }
     });
 
@@ -138,24 +145,22 @@ class TVDisplay {
     });
 
     // Window focus events for auto-refresh
-    window.addEventListener("focus", () => {
-      this.loadTVData();
-      this.startAutoRefresh();
-    });
+    // window.addEventListener("focus", () => {
+    //   this.startAutoRefresh();
+    // });
 
-    window.addEventListener("blur", () => {
-      this.stopAutoRefresh();
-    });
+    // window.addEventListener("blur", () => {
+    //   this.stopAutoRefresh();
+    // });
 
     // Handle visibility change (tab switching)
-    document.addEventListener("visibilitychange", () => {
-      if (document.hidden) {
-        this.stopAutoRefresh();
-      } else {
-        this.loadTVData();
-        this.startAutoRefresh();
-      }
-    });
+    // document.addEventListener("visibilitychange", () => {
+    //   if (document.hidden) {
+    //     this.stopAutoRefresh();
+    //   } else {
+    //     this.startAutoRefresh();
+    //   }
+    // });
   }
 
   async loadTVData() {
@@ -198,14 +203,22 @@ class TVDisplay {
     }
 
     this.updateControls();
+    this.updateYoutubePlayer();
   }
 
   showImage() {
     const imageDisplay = document.getElementById("imageDisplay");
     const tvImage = document.getElementById("tvImage");
+    const newImageUrl = this.tvData.image;
 
-    // Add cache-busting parameter to ensure fresh image
-    const imageUrl = `${this.tvData.image}?t=${Date.now()}`;
+    // *** THE FIX IS HERE ***
+    // Only update the image src if it has actually changed.
+    // This prevents the image from flickering on every update.
+    if (tvImage.src.endsWith(newImageUrl)) {
+      // If the image is already correct, just ensure it's visible.
+      imageDisplay.style.display = "flex";
+      return;
+    }
 
     tvImage.onload = () => {
       imageDisplay.style.display = "flex";
@@ -216,7 +229,7 @@ class TVDisplay {
       this.showNoImage();
     };
 
-    tvImage.src = imageUrl;
+    tvImage.src = newImageUrl;
     tvImage.alt = `${this.tvData.name} Display`;
   }
 
@@ -288,21 +301,21 @@ class TVDisplay {
     document.body.appendChild(indicator);
   }
 
-  startAutoRefresh() {
-    this.stopAutoRefresh();
-
-    // Refresh every 60 seconds (reduced frequency since we have real-time updates)
-    this.refreshInterval = setInterval(() => {
-      this.loadTVData();
-    }, 60000);
-  }
-
-  stopAutoRefresh() {
-    if (this.refreshInterval) {
-      clearInterval(this.refreshInterval);
-      this.refreshInterval = null;
-    }
-  }
+  // startAutoRefresh() {
+  //   this.stopAutoRefresh();
+  //
+  //   // Refresh every 60 seconds (reduced frequency since we have real-time updates)
+  //   this.refreshInterval = setInterval(() => {
+  //     this.loadTVData();
+  //   }, 60000);
+  // }
+  //
+  // stopAutoRefresh() {
+  //   if (this.refreshInterval) {
+  //     clearInterval(this.refreshInterval);
+  //     this.refreshInterval = null;
+  //   }
+  // }
 
   setupCursorHiding() {
     this.showCursor();
@@ -524,6 +537,40 @@ class TVDisplay {
       }
     }, 2000);
   }
+
+  updateYoutubePlayer() {
+    const container = document.getElementById("youtubePlayerContainer");
+    const youtubeLink = this.tvData ? this.tvData.youtubeLink : null;
+
+    if (youtubeLink) {
+      const videoId = this.extractYoutubeVideoId(youtubeLink);
+      if (videoId) {
+        container.innerHTML = `
+          <iframe
+            src="https://www.youtube.com/embed/${videoId}?autoplay=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&autohide=1&modestbranding=1"
+            frameborder="0"
+            allow="autoplay; encrypted-media"
+            allowfullscreen
+          ></iframe>
+        `;
+        container.classList.add("visible");
+      } else {
+        container.innerHTML = "";
+        container.classList.remove("visible");
+      }
+    } else {
+      container.innerHTML = "";
+      container.classList.remove("visible");
+    }
+  }
+
+  extractYoutubeVideoId(url) {
+    if (!url) return null;
+    const regExp =
+      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return match && match[2].length === 11 ? match[2] : null;
+  }
 }
 
 // Initialize TV display when DOM is loaded
@@ -534,7 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // Handle page unload
 window.addEventListener("beforeunload", () => {
   if (window.tvDisplay) {
-    window.tvDisplay.stopAutoRefresh();
+    // window.tvDisplay.stopAutoRefresh();
     // Leave the TV room when page unloads
     if (window.tvDisplay.socket && window.tvDisplay.tvId) {
       window.tvDisplay.socket.emit("leaveTvDisplay", window.tvDisplay.tvId);

@@ -69,6 +69,29 @@
             </div>
         </div>
 
+        <!-- YouTube Link Modal -->
+        <div id="youtubeModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Tambah/Ubah Tautan YouTube</h2>
+                    <span class="close" id="closeYoutubeModal">&times;</span>
+                </div>
+                <div class="modal-body">
+                    <form id="youtubeForm">
+                        <div class="form-group">
+                            <label for="youtubeLink">Tautan YouTube:</label>
+                            <input type="url" id="youtubeLink" name="youtubeLink" placeholder="https://www.youtube.com/watch?v=...">
+                            <small>Kosongkan untuk menghapus video.</small>
+                        </div>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelYoutubeBtn">Batal</button>
+                            <button type="submit" class="btn btn-primary">Simpan</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
         <!-- Loading Overlay -->
         <div id="loadingOverlay" class="loading-overlay">
             <div class="spinner"></div>
